@@ -2258,7 +2258,91 @@ class Command:
 			isHeader = False
 
 
+	def new_usage(self, *, markdown=False):
+		options = [ ]
+		arg  = self.options.get_arg()
+		if markdown:
+			name = '*%s*' % arg.name
+		else:
+			name = '%s' % arg.name
+		options.append('%s%s%s%s' % ('' if arg.required else '[',
+					     name,
+					     ' ' if arg.unique   else ' ...',
+					     '' if arg.required else ']'))
+		for param in self.options.get_params():
+			default = ''
+			if markdown:
+				name = '`%s=`' % param.name
+				if param.default is not None:
+					default = '*%s*'  % param.default
+			else:
+				name = '%s=' % param.name
+				if param.default is not None:
+					default = param.default
+
+			options.append('%s%s%s%s' % ('' if param.required else '[',
+						     name, default,
+						     '' if param.required else ']'))
+
+		return ' '.join(options)
+
+	def new_help(self, name):
+		md = [ ]
+		md.append('# Usage')
+		md.append('')
+		md.append('`stack %s` %s' % (name, self.new_usage(markdown=True)))
+		md.append('')
+		md.append('# Description')
+		md.append('%s' % self.options.get_description())
+		md.append('')
+		arg = self.options.get_arg()
+		md.append('# Options')
+		md.append('')
+		md.append('%s*%s*%s%s' % ('' if arg.required else '[',
+					  arg.name,
+					  ' ' if arg.unique   else ' ...',
+					  '' if arg.required else ']'))
+		md.append('')
+		for line in arg.description.strip().split('\n'):
+			md.append('%s' % line)
+		md.append('')
+		for param in self.options.get_params():
+			if param.default is not None:
+				default = ':*%s*' % param.default
+			else:
+				default = ''
+			md.append('%s`%s=`%s%s%s' % ('' if param.required else '[',
+						     param.name,
+						     param.type.__name__,
+						     default,
+						     '' if param.required else ']'))
+
+			md.append('')
+			for line in param.description.strip().split('\n'):
+				md.append('%s' % line)
+			md.append('')
+
+		if self.options.get_examples():
+			md.append('# Examples')
+			md.append('')
+			for example in self.options.get_examples():
+				md.append('`# stack %s`' % example.command)
+				md.append('%s' % example.description)
+
+		md = '\n'.join(md)
+
+		try:
+			import consolemd
+			renderer = consolemd.Renderer()
+			renderer.render(md)
+		except ModuleNotFoundError:
+			print(md)
+
+
 	def usage(self):
+		if hasattr(self, 'options'):
+			return self.new_usage()
+
 		if self.__doc__:
 			handler = DocStringHandler()
 			parser = make_parser()
@@ -2274,6 +2358,10 @@ class Command:
 
 		
 	def help(self, command, flags={}):
+		if hasattr(self, 'options'):
+			self.new_help(command)
+			return
+
 		if not self.__doc__:
 			return
 
@@ -2439,7 +2527,7 @@ class Command:
 				self._params = dict # optional parameters
 
 				rc = self.run(self._params, self._args)
-				
+
 				# if a command does not explicitly return
 				# assume it succeeded, otherwise use the
 				# actual return code.
