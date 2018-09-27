@@ -421,6 +421,7 @@ class CartArgumentProcessor:
 
 
 class PalletArgumentProcessor:
+
 	def getPallets(self, args, params):
 		"""
 		Returns a Pallet namedtuple with the fields:
