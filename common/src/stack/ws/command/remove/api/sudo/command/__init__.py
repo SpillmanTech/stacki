@@ -3,19 +3,19 @@ import stack.commands
 import stack.django_env
 from stack.exception import *
 
-from stack.restapi.models import BlackList
+from stack.restapi.models import SudoList
 
 import re
 
 class Command(stack.commands.Command):
 	"""
 	Remove a command from the webservice
-	blacklist.
+	sudo list.
 	<param type="string" name="command">
-	Command to remove from blacklist
+	Command to remove from sudo list
 	</param>
-	<example cmd="remove api blacklist command command='list host message'">
-	Remove "list host message" command from the blacklist.
+	<example cmd="remove api sudo command command='sync host config'">
+	Remove "sync host config" command from the sudo list.
 	</example>
 	"""
 	def run(self, params, args):
@@ -25,7 +25,7 @@ class Command(stack.commands.Command):
 		if not command:
 			raise ParamRequired(self, "Command")
 		try:
-			b = BlackList.objects.get(command=command)
-			b.delete()
-		except BlackList.DoesNotExist:
-			raise CommandError(self, "Command %s is not blacklisted" % command)
+			s = SudoList.objects.get(command=command)
+			s.delete()
+		except SudoList.DoesNotExist:
+			raise CommandError(self, f"Command {command} is not a sudo command")
